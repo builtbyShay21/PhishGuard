@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard | Threat Analysis Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .assessment-container {
+            text-align: center;
+            margin: 20px 0 40px 0;
+            padding: 30px;
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        .assessment-title {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        .assessment-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .assessment-value.high { color: var(--risk-high); }
+        .assessment-value.elevated { color: var(--risk-moderate); }
+        .assessment-value.review { color: var(--risk-guarded); }
+        .assessment-value.low { color: var(--risk-low); }
+        
+        .assessment-desc {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .panels-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            text-align: center;
+        }
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        /* ML Visuals */
+        .ml-prob {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #ff4b4b, #ff7b7b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .ml-label {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 25px;
+        }
+        .ml-pred-box {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .ml-pred-val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 5px;
+        }
+        .ml-model-name {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .prob-bar-container {
+            margin-top: 25px;
+            text-align: left;
+        }
+        .prob-bar-row {
+            margin-bottom: 15px;
+        }
+        .prob-bar-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .prob-bar-bg {
+            background: rgba(255,255,255,0.1);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+        }
+        .prob-bar-fill.phish { background: var(--risk-high); }
+        .prob-bar-fill.benign { background: var(--risk-low); }
+        
+        @media (max-width: 768px) {
+            .panels-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand-container">
+            <div class="nav-brand">
+                <a href="/" style="display:flex; align-items:center; gap:10px; color:white;">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                PhishGuard
+                </a>
+            </div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/">New Analysis</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <div class="result-header">
+            <div class="result-badge">THREAT ANALYSIS REPORT</div>
+            <h2>{{ features.hostname_length and normalized_url.split('/')[2] or original_url }}</h2>
+            <div class="url-display">{{ normalized_url }}</div>
+        </div>
+
+        <div class="assessment-container">
+            <div class="assessment-title">OVERALL ASSESSMENT</div>
+            {% set oa = analysis.overall_assessment %}
+            {% set a_class = 'high' if 'HIGH' in oa else ('elevated' if 'ELEVATED' in oa else ('review' if 'REVIEW' in oa else 'low')) %}
+            <div class="assessment-value {{ a_class }}">{{ oa }}</div>
+            <div class="assessment-desc">{{ analysis.agreement_status }}</div>
+        </div>
+
+        <div class="panels-grid">
+            <!-- LEFT: MACHINE LEARNING -->
+            <div class="panel">
+                <div class="panel-title">MACHINE LEARNING</div>
+                {% if analysis.ml.available %}
+                    <div class="ml-prob">{{ "%.0f"|format(analysis.ml.phishing_probability * 100) }}%</div>
+                    <div class="ml-label">Phishing Probability</div>
+                    
+                    <div class="ml-pred-box">
+                        <div class="ml-pred-val">{{ analysis.ml.prediction_label }}</div>
+                        <div class="ml-model-name">Model: {{ analysis.ml.model }}</div>
+                    </div>
+                    
+                    <div class="prob-bar-container">
+                        <div class="prob-bar-row">
+                            <div class="prob-bar-labels">
+                                <span>PHISHING</span>
+                                <span>{{ "%.0f"|format(analysis.ml.phishing_probability * 100) }}%</span>
+                            </div>
+                            <div class="prob-bar-bg">
+                                <div class="prob-bar-fill phish" style="width: {{ analysis.ml.phishing_probability * 100 }}%;"></div>
+                            </div>
+                        </div>
+                        <div class="prob-bar-row">
+                            <div class="prob-bar-labels">
+                                <span>BENIGN-LIKE</span>
+                                <span>{{ "%.0f"|format(analysis.ml.benign_probability * 100) }}%</span>
+                            </div>
+                            <div class="prob-bar-bg">
+                                <div class="prob-bar-fill benign" style="width: {{ analysis.ml.benign_probability * 100 }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div style="margin-top:50px; color:var(--text-secondary);">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:15px; opacity:0.5;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p>ML analysis unavailable.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- RIGHT: HEURISTIC ANALYSIS -->
+            <div class="panel">
+                <div class="panel-title">HEURISTIC ANALYSIS</div>
+                <div class="gauge-container" data-score="{{ analysis.heuristic.risk_score }}" data-level="{{ analysis.heuristic.risk_level }}">
+                    <svg viewBox="0 0 100 50" class="gauge">
+                        <path class="gauge-bg" d="M 10 50 A 40 40 0 0 1 90 50" />
+                        <path class="gauge-fill" d="M 10 50 A 40 40 0 0 1 90 50" stroke-dasharray="125.6" stroke-dashoffset="125.6" />
+                    </svg>
+                    <div class="score-text">
+                        <span class="score-value">{{ analysis.heuristic.risk_score }}</span>
+                        <span class="score-max">/100</span>
+                    </div>
+                </div>
+                <div class="risk-level level-{{ analysis.heuristic.risk_level | lower }}" style="margin: 20px 0;">{{ analysis.heuristic.risk_level }}</div>
+                
+                <div class="ml-pred-box" style="margin-top:auto;">
+                    <div class="ml-pred-val">{{ analysis.heuristic.indicators|length }}</div>
+                    <div class="ml-model-name">Security Indicators Detected</div>
+                </div>
+            </div>
+        </div>
+
+        <section class="indicators-section">
+            <h3>Why was this URL flagged?</h3>
+            {% if analysis.heuristic.indicators|length > 0 %}
+                <div class="indicators-grid">
+                    {% for ind in analysis.heuristic.indicators %}
+                    <div class="card indicator-card border-{{ ind.severity }}">
+                        <div class="indicator-top">
+                            <div class="ind-title-col">
+                                <div class="ind-title">{{ ind.indicator }}</div>
+                                <div class="severity-badge sev-{{ ind.severity }}">{{ ind.severity | upper }}</div>
+                            </div>
+                            <div class="ind-points-col">
+                                <div class="points-val ind-pts-{{ ind.severity }}">+{{ ind.points }}</div>
+                                <div class="points-lbl">RISK POINTS</div>
+                            </div>
+                        </div>
+                        <p class="indicator-desc">{{ ind.explanation }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card indicator-card" style="border-top-color: var(--risk-low);">
+                    <p style="padding: 10px 0;">No significant heuristic risk indicators were detected.</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="tech-section">
+            <details>
+                <summary>Technical URL Details</summary>
+                <div class="tech-grid">
+                    <div class="tech-item"><span class="tech-lbl">HTTPS</span><span class="tech-val">{{ 'YES' if features.uses_https else 'NO' }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">IP HOST</span><span class="tech-val">{{ 'YES' if features.is_ipv4 else 'NO' }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">SUBDOMAINS</span><span class="tech-val">{{ features.num_subdomains }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">URL LENGTH</span><span class="tech-val">{{ features.url_length }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">HOSTNAME LENGTH</span><span class="tech-val">{{ features.hostname_length }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">PATH LENGTH</span><span class="tech-val">{{ features.path_length }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">PUNYCODE</span><span class="tech-val">{{ 'YES' if features.has_punycode else 'NO' }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">QUERY PARAMS</span><span class="tech-val">{{ features.num_query_params }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">DOTS</span><span class="tech-val">{{ features.num_dots }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">HYPHENS</span><span class="tech-val">{{ features.num_hyphens }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">DIGITS</span><span class="tech-val">{{ features.num_digits }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">NON-STD PORT</span><span class="tech-val">{{ 'YES' if features.has_non_standard_port else 'NO' }}</span></div>
+                    <div class="tech-item"><span class="tech-lbl">% ENCODED</span><span class="tech-val">{{ features.num_percent_encoded }}</span></div>
+                </div>
+            </details>
+            
+            <details style="margin-top: 15px;">
+                <summary>ML Model Information</summary>
+                <div style="padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <p style="color: var(--risk-moderate); margin-bottom: 15px; font-weight: 600;">Experimental held-out dataset results</p>
+                    <p style="margin-bottom: 20px; color: var(--text-secondary); font-size: 0.9rem;">Performance on this dataset does not guarantee equivalent performance on arbitrary real-world URLs.</p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.95rem;">
+                        <div><strong style="color:white;">Model:</strong> Random Forest</div>
+                        <div><strong style="color:white;">Features:</strong> 15 lexical URL features</div>
+                        <div><strong style="color:white;">Evaluation:</strong> Group-aware hostname holdout</div>
+                        <div><strong style="color:white;">Test Samples:</strong> 2,277</div>
+                        <div><strong style="color:white;">Test Accuracy:</strong> 80.28%</div>
+                        <div><strong style="color:white;">Test F1:</strong> 78.40%</div>
+                        <div><strong style="color:white;">ROC-AUC:</strong> 88.52%</div>
+                        <div><strong style="color:white;">Phishing Recall:</strong> 77.47%</div>
+                    </div>
+                </div>
+            </details>
+        </section>
+        
+        <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 40px; padding: 20px; background: var(--bg-card); border-radius: var(--border-radius);">
+            <strong>Disclaimer:</strong> The heuristic score represents potential security indicators and does not prove that a URL is malicious.
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-brand">PhishGuard</div>
+        <p>Hybrid ML + Explainable Heuristic Analysis</p>
+        <p>Python • Flask • Random Forest</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

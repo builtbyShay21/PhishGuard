@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+venv/
+env/
+.env
+.venv/
+
+# ML specific ignores
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+models/*
+!models/.gitkeep
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+meta.csv

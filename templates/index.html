@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard | Intelligent URL Threat Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand-container">
+            <div class="nav-brand">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                PhishGuard
+            </div>
+            <div class="nav-tagline">INTELLIGENT URL THREAT ANALYSIS</div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/">Analyzer</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <div class="hero-badge">PHISHING URL ANALYSIS</div>
+            <h1>Analyze Before<br><span class="highlight">You Trust.</span></h1>
+            <p class="subtitle">Analyze suspicious URLs using explainable security heuristics without visiting the destination.</p>
+            
+            <div class="analyzer-panel">
+                <div class="analyzer-header">URL ANALYZER</div>
+                <form action="/" method="POST">
+                    <div class="input-group">
+                        <input type="text" name="url" placeholder="Enter a URL to inspect..." required maxlength="2048">
+                        <button type="submit" class="btn-primary">Analyze Threat</button>
+                    </div>
+                    {% if error %}
+                        <div style="color: var(--risk-critical); margin-top: 15px; font-weight: 600; text-align: left;">{{ error }}</div>
+                    {% endif %}
+                </form>
+                <div class="privacy-note">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3" fill="var(--bg-secondary)"/></svg>
+                    Local analysis • Destination never visited
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="card feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M8 10h8M8 14h8"/></svg>
+                </div>
+                <h3>Local Analysis</h3>
+                <p>Extracts URL security features without requesting the submitted destination.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                </div>
+                <h3>Explainable Results</h3>
+                <p>Every detected indicator contributes to a transparent and explainable risk score.</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                </div>
+                <h3>Privacy Focused</h3>
+                <p>No DNS, WHOIS, HTTP requests or external URL lookups are performed.</p>
+            </div>
+        </section>
+
+        <section id="how-it-works" class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="process-flow">
+                <div class="process-step">
+                    <div class="step-number">01</div>
+                    <div class="step-title">ENTER URL</div>
+                </div>
+                <div class="process-arrow">→</div>
+                <div class="process-step">
+                    <div class="step-number">02</div>
+                    <div class="step-title">NORMALIZE & PARSE</div>
+                </div>
+                <div class="process-arrow">→</div>
+                <div class="process-step">
+                    <div class="step-number">03</div>
+                    <div class="step-title">EXTRACT FEATURES</div>
+                </div>
+                <div class="process-arrow">→</div>
+                <div class="process-step">
+                    <div class="step-number">04</div>
+                    <div class="step-title">EVALUATE INDICATORS</div>
+                </div>
+                <div class="process-arrow">→</div>
+                <div class="process-step">
+                    <div class="step-number">05</div>
+                    <div class="step-title">CALCULATE & EXPLAIN RISK</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="analyzed-features" class="analyzed-features">
+            <h2>Security Features Analyzed</h2>
+            <div class="feature-tags">
+                <span class="feature-tag">HTTPS Usage</span>
+                <span class="feature-tag">IPv4 Hostnames</span>
+                <span class="feature-tag">URL Length</span>
+                <span class="feature-tag">Hostname Length</span>
+                <span class="feature-tag">Subdomains</span>
+                <span class="feature-tag">Suspicious Keywords</span>
+                <span class="feature-tag">Punycode</span>
+                <span class="feature-tag">Non-Standard Ports</span>
+                <span class="feature-tag">Query Parameters</span>
+                <span class="feature-tag">Percent Encoding</span>
+                <span class="feature-tag">Hyphens</span>
+                <span class="feature-tag">Digit Density</span>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-brand">PhishGuard</div>
+        <p>Explainable Phishing URL Analysis</p>
+        <p>Python • Flask • Security Heuristics</p>
+    </footer>
+</body>
+</html>
