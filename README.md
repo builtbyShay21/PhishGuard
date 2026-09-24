@@ -5,103 +5,83 @@
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/Flask-Web%20Framework-lightgrey.svg)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-Machine%20Learning-orange.svg)
-![License](https://img.shields.io/badge/License-See%20Note-green.svg)
+![Tests](https://img.shields.io/badge/Tests-40%20Passing-success.svg)
+
+*(Note: No explicit open-source license has currently been selected for this repository.)*
 
 ## Overview
 
 PhishGuard is an offline phishing URL analysis system combining transparent security heuristics with machine-learning classification. 
 
-The system analyzes submitted URLs entirely as strings through static lexical analysis. **Destinations are never intentionally visited**, and no external DNS, WHOIS, or reputation APIs are queried, ensuring complete operational privacy and avoiding accidental interaction with malicious infrastructure.
+Rather than relying purely on a black-box model, the system pairs a deterministically interpretable heuristic risk engine with a Random Forest classifier. Analysis is 100% offline and static: submitted destination URLs are never intentionally visited, and no external DNS or WHOIS APIs are queried, ensuring complete operational privacy.
 
-*Note: PhishGuard is a portfolio project and is not intended for production-grade enterprise deployment.*
+## Highlights
 
-## Key Features
+- **Hybrid Analysis Engine**: Dual-consensus decision support instead of arbitrary score averaging.
+- **Explainable Security Indicators**: Deterministic rule engine assigning transparent risk points.
+- **15 Lexical Features**: Extracting URL, hostname, path, character, and term-based structural traits.
+- **Random Forest Classifier**: Probabilistic phishing detection trained on full structural URLs.
+- **Hostname-Isolated Evaluation**: Rigorous group-aware splitting to prevent domain-level data leakage.
+- **Offline / Privacy-Conscious Design**: Zero external network requests during analysis.
+- **Flask Dashboard & CLI**: Accessible web interface and rapid terminal analysis tools.
+- **Automated Testing**: Comprehensive pytest suite (40 passing tests).
 
-- **Offline URL Analysis**: 100% local, static analysis of URL strings.
-- **Lexical Security Features**: Extraction of 15 security-relevant lexical characteristics.
-- **Explainable Heuristic Scoring**: Deterministic rule engine assigning risk points and generating transparent explanations.
-- **Random Forest ML Classifier**: Probabilistic phishing detection based on structural patterns.
-- **Hybrid Analysis**: Dual-engine consensus interpretation rather than simple score averaging.
-- **Group-Aware ML Evaluation**: Hostname-isolated train/test splitting to prevent domain-level data leakage.
-- **Modern Flask Dashboard**: Professional web interface for intuitive result interpretation.
-- **CLI Tool**: Command-line interface for rapid terminal-based analysis.
-- **Automated Testing**: Comprehensive pytest suite (40/40 passing tests).
-- **Graceful Fallback**: Continuous heuristic operation even if ML models are unavailable.
+## Demo
 
-## Screenshots
-
-*(Screenshots will be added here)*
-
-| Homepage | Low Risk |
+| Homepage | Low Concern |
 | :---: | :---: |
 | ![Homepage](docs/screenshots/01-homepage.png) | ![Low Risk](docs/screenshots/02-low-risk.png) |
 
-| Elevated Concern | Review Recommended |
+| Review Recommended (Disagreement) | Elevated Concern |
 | :---: | :---: |
-| ![Elevated](docs/screenshots/04-elevated-concern.png) | ![Review](docs/screenshots/03-review-recommended.png) |
+| ![Review Recommended](docs/screenshots/03-review-recommended.png) | ![Elevated Concern](docs/screenshots/04-elevated-concern.png) |
 
-## Architecture
+## How It Works
 
 ```mermaid
 graph TD
     A[User URL Input] --> B[Validation & Normalization]
     B --> C[Lexical Feature Extraction]
     
-    C --> D[Explainable Risk Engine]
-    C --> E[Random Forest ML Predictor]
+    C --> D[Explainable Heuristic Engine]
+    C --> E[Random Forest ML Classifier]
     
-    D --> F[Analysis Service]
+    D --> F[Hybrid Analysis Service]
     E --> F
     
-    F --> G[Overall Assessment / Hybrid Agreement]
+    F --> G[Overall Assessment]
     
-    G --> H[Flask UI]
-    G --> I[CLI]
+    G --> H[Flask Dashboard / CLI]
 ```
 
-Both analysis engines consume the exact same static feature dictionary, ensuring strict consistency across the pipeline.
+Both engines consume the exact same static extracted features. The `AnalysisService` strictly interprets agreement and disagreement between the heuristic points and ML probabilities to produce an Overall Assessment, instead of mathematically diluting them into an average score.
 
-## Security Features
+## Detection Features
 
-PhishGuard extracts 15 core lexical features for both heuristic and ML analysis:
+PhishGuard extracts 15 core lexical features, broadly categorized into:
+- **Length Characteristics**: URL length, hostname length, and path length.
+- **Punctuation & Digits**: Counts of dots, hyphens, and numeric characters.
+- **Network Indicators**: Use of IPv4 hostnames, explicit non-standard ports, and HTTPS.
+- **Obfuscation Attempts**: Presence of '@' symbol, punycode ('xn--'), percentage encoding, subdomains, and query parameters.
+- **Security-Sensitive Terminology**: Suspicious keywords (e.g., 'login', 'verify').
 
-| Feature | Description |
-|---|---|
-| `url_length` | Total length of the URL |
-| `hostname_length` | Length of the domain name |
-| `path_length` | Length of the URL path |
-| `num_dots` | Count of '.' characters |
-| `num_hyphens` | Count of '-' characters |
-| `num_digits` | Count of numeric characters |
-| `num_subdomains` | Estimated number of subdomains |
-| `is_ipv4` | Whether the hostname is an IPv4 address |
-| `has_at_symbol` | Presence of an '@' character |
-| `has_punycode` | Presence of 'xn--' indicating punycode |
-| `num_percent_encoded` | Count of '%xx' encoded characters |
-| `num_query_params` | Number of distinct query parameters |
-| `has_non_standard_port` | Whether a non-80/443 port is specified |
-| `uses_https` | Whether the scheme is HTTPS |
-| `num_suspicious_keywords`| Presence of security-sensitive words (e.g., 'login', 'verify') |
+*(Detailed methodology is available in `docs/METHODOLOGY.md`)*
 
-## ML Methodology
+## Machine Learning
 
-**Dataset (TODO: Verify Provenance)**
-- Total Usable URLs: 11,428
-- Legitimate: 5,715
-- Phishing: 5,713
+The ML pipeline was trained to compare an interpretable linear baseline against a non-linear ensemble. 
 
-**Group-Aware Hostname Isolation**
-A naive row-level train/test split on URL datasets causes severe data leakage because multiple URLs often share the exact same domain name. PhishGuard uses a **group-aware hostname holdout** strategy (`GroupShuffleSplit`) to ensure that all URLs belonging to a specific hostname are placed entirely in either the training set or the test set. 
+- **Logistic Regression**: Used as the baseline model.
+- **Random Forest**: Used as the current inference classifier.
+- **GroupShuffleSplit**: Applied based on hostname to enforce strict **hostname isolation**.
 
-- **Train Samples**: 9,151 (6,592 unique hostnames)
-- **Test Samples**: 2,277 (1,649 unique hostnames)
-- **Train/Test Hostname Overlap**: 0
+Naive row-level dataset splitting suffers from severe data leakage because legitimate/phishing URLs often share the exact same domain name. By isolating hostnames, PhishGuard forces the model to generalize structural patterns rather than memorizing domains. 
 
-*Note: While hostname isolation dramatically reduces domain-memorization leakage, it does not claim to eliminate all possible dataset or source-level bias.*
+*(Note: PhishGuard is not a production-grade appliance, does not detect all phishing patterns, and its probabilistic outputs do not represent absolute certainty.)*
 
-## Model Results
+## Results
 
-Models were evaluated exclusively on the independent, hostname-isolated test set.
+Models were evaluated exclusively on the independent, hostname-isolated test set (2,277 samples, 0 hostname overlap with training data).
 
 | Metric | Logistic Regression | Random Forest |
 |---|---|---|
@@ -112,103 +92,86 @@ Models were evaluated exclusively on the independent, hostname-isolated test set
 | ROC-AUC | 82.10% | 88.52% |
 | Average Precision | 83.26% | 87.99% |
 
-**Confusion Matrices:**
-- **Logistic Regression**: TN 955 | FP 270 | FN 356 | TP 696
-- **Random Forest**: TN 1013 | FP 212 | FN 237 | TP 815
+**Random Forest** is utilized as the inference engine because it achieved stronger measured performance on this specific held-out dataset. 
 
-*Random Forest is used as the current inference engine because it produced stronger measured results across these specific held-out metrics. This does not indicate it is universally superior against novel threats.*
+## Explainability
 
-## Hybrid Analysis Interpretation
+PhishGuard explicitly maintains separation between the heuristic risk score and the ML probability. 
 
-PhishGuard deliberately **does not mathematically average** the heuristic risk score and the ML probability. The heuristic score is a deterministic point-based tally, while the ML model outputs a statistical probability; merging them dilutes explainability.
-
-Instead, the `AnalysisService` uses categorical agreement rules (e.g., `LOW CONCERN`, `ELEVATED CONCERN`, `HIGH CONCERN`, `REVIEW RECOMMENDED`).
-
-**Interesting Limitation Example:**
+**An Important Disagreement Example:**
 When analyzing `https://github.com/login`:
 - **Heuristic**: 5/100 (LOW)
 - **Random Forest**: 85.1% Phishing Probability (SUSPICIOUS)
 - **Overall**: REVIEW RECOMMENDED
 
-This disagreement perfectly highlights a known limitation: legitimate login URLs often share lexical structures (e.g., paths containing "login") with phishing endpoints. PhishGuard explicitly exposes this conflict rather than suppressing it.
+Legitimate authentication URLs can strongly resemble credential-harvesting phishing URLs structurally (e.g., containing paths like "login"). By preserving engine independence, PhishGuard highlights this known ML limitation and empowers the user with transparent context rather than burying a false positive inside a blended score.
 
-## Limitations
+## Security / Privacy Design
 
-- **Static Lexical Analysis Only**: Does not inspect website HTML/JavaScript content.
-- **No External Intelligence**: Does not use DNS, WHOIS, or reputation APIs.
-- **Structural Overlap**: Lexical similarity between benign login portals and phishing pages can cause false positives.
-- **Evasion Tactics**: Novel phishing patterns (like aggressive URL shorteners) may cause false negatives.
-- **Dataset Bias**: Held-out metrics represent performance on this specific dataset partition and do not guarantee equivalent real-world performance.
-- **Probabilistic Outputs**: The model output is a statistical prediction, not definitive proof of malicious intent.
+PhishGuard respects operational security boundaries:
+- **Does not visit** submitted URLs.
+- **Does not perform** DNS resolution or WHOIS lookups.
+- **Does not download** remote content.
+- **Does not execute** submitted content.
 
-## Security Design
-
-PhishGuard operates under strict offline constraints. The application **does not**:
-- Visit submitted URLs
-- Perform DNS resolution or WHOIS lookups
-- Scrape destination pages
-- Execute downloaded content
-
-All input is sanitized, URL length is strictly capped to prevent DOS, and Jinja2 templating prevents XSS in the Flask interface.
+Please see [docs/SECURITY.md](docs/SECURITY.md) for full details.
 
 ## Installation
 
-To run PhishGuard locally:
-
 ```bash
-# Clone the repository
 git clone https://github.com/builtbyShay21/PhishGuard.git
 cd PhishGuard
 
 # Create and activate a virtual environment
 python -m venv venv
+# Windows: .\venv\Scripts\Activate.ps1
+# Linux/macOS: source venv/bin/activate
 
-# Windows PowerShell:
-.\venv\Scripts\Activate.ps1
-# Linux/macOS:
-# source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Run the test suite (optional but recommended)
-pytest -v
-
-# Start the Flask web application
 python app.py
 ```
-Open `http://127.0.0.1:5000` in your browser.
 
-To use the CLI instead of the web UI:
+For CLI usage, run:
 ```bash
 python main.py
 ```
 
-### Model Setup
+## ML Model Availability
 
-PhishGuard's source code is fully available, but **trained ML model binaries are intentionally excluded from the Git repository** due to their large file size (60+ MB). 
+**Trained ML model binaries are intentionally excluded from the Git repository** due to size constraints. 
 
-- **Graceful Fallback**: The Flask and CLI applications can run immediately without the trained model. If `models/random_forest.joblib` is absent, the system gracefully falls back to heuristic-only analysis.
-- **Reproducing the Model**: The model can be retrained locally using the included ML pipeline (`ml/train.py`) if you have the required dataset. 
-- **Dataset Availability**: The raw datasets are not distributed in this repository pending verification of redistribution rights. You must supply your own valid dataset inside `data/raw/` to retrain the ML pipeline.
+- **Graceful Fallback**: The Flask application automatically falls back to heuristic-only analysis when the model is unavailable.
+- **Reproducing the Model**: The full ML training pipeline (`ml/train.py`) is included. You may train your own model if you have a structurally comparable dataset placed inside `data/raw/`.
 
 ## Project Structure
 
 ```text
 PhishGuard/
-├── src/                    # Core pipeline (validation, features, heuristic, ML)
-├── ml/                     # Machine learning training and evaluation scripts
-├── models/                 # Serialized joblib models (if distributed)
-├── templates/              # Flask HTML templates
+├── src/                    # Feature extraction, heuristics, ML inference wrapper
+├── ml/                     # ML training, evaluation, and pipeline scripts
+├── scripts/                # Dataset preparation and auditing tools
+├── templates/              # Flask web UI templates
 ├── static/                 # CSS/JS assets
-├── tests/                  # Pytest automated test suite
-├── docs/                   # Extended methodology and security documentation
-├── app.py                  # Flask web server
-├── main.py                 # CLI interface
-└── requirements.txt        # Python dependencies
+├── tests/                  # Automated pytest suite
+├── docs/                   # Documentation and methodology
+├── app.py                  # Flask application
+└── main.py                 # CLI interface
 ```
 
-## License and Dataset Provenance
+## Limitations
 
-**License Selection**: Please refer to the repository owner's `LICENSE` file for source code usage rights. 
-**Dataset Provenance**: Source datasets are omitted from this repository pending proper attribution and redistribution rights verification (TODO). Third-party datasets do not inherit the project's software license.
+- **Static Lexical Analysis Only**: Does not inspect webpage HTML, headers, or certificates.
+- **No Active Inspection**: Lack of network/reputation capability limits context.
+- **False Positives**: Legitimate login/account URLs may structurally trigger the ML classifier.
+- **Obfuscation Techniques**: Evasion tactics (like shorteners) reduce structural effectiveness.
+- **Dataset Bias**: Held-out metrics represent specific dataset performance and do not guarantee real-world generalization.
+
+## Documentation
+
+- [Methodology](docs/METHODOLOGY.md)
+- [Security Policy](docs/SECURITY.md)
+
+## Dataset Provenance
+
+Raw datasets are not redistributed with this repository. Dataset provenance and redistribution rights are treated separately from the project's source-code licensing. Reported model results should be interpreted only in the context of the audited dataset used during development.
